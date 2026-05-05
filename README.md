@@ -28,8 +28,8 @@ Here's an example of what it can do:
 
 <table>
   <tr>
-    <td><img src="media\phone UI 2.png" alt="Funny Strava activity 1" width="300"/></td>
-        <td><img src="media\phone UI 1.png" alt="Funny Strava activity 1" width="305"/></td>
+    <td><img src="media\UI1.png" alt="Funny Strava activity 1" width="300"/></td>
+        <td><img src="media\UI2.png" alt="Funny Strava activity 1" width="315"/></td>
 
   </tr>
 </table>
