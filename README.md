@@ -46,6 +46,9 @@ Here's an example of what it can do:
 
 The goal is to make Strava feel more conversational and social. Instead of digging through the app, you can text things the above sayings to get info on demand!
 
+Video Demo can be found here: https://www.youtube.com/watch?v=C7qwE2mfUO4 
+Note: please contact celine.yu03@gmail.com for access request 
+
 ## How It Works
 
 Ride or Stride connects the Strava API to the Linq API, letting you text your Linq number and ask for run stats, kudos, clubs, race details, motivation, or a ready-to-share post caption.
