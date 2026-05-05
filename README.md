@@ -50,7 +50,7 @@ The goal is to make Strava feel more conversational and social. Instead of diggi
 
 Ride or Stride connects the Strava API to the Linq API, letting you text your Linq number and ask for run stats, kudos, clubs, race details, motivation, or a ready-to-share post caption.
 
-![alt text](media\image-3.png)
+![alt text](media/image-3.png)
 
 ### Flow 
 - You send a text to your Linq number from iMessage
