@@ -1,24 +1,97 @@
-# Linq API + Strava Stats
+# Introduction 
 
-This project connects the Strava API to the Linq API so you can text your Linq number from your phone and get your latest Strava run stats back as a reply.
 
-## What It Does
+Are we all in our running era nowadays? Before Strava, did a run even happen? No Garmin trace, no segment, no kudos , just you, the road, and absolutely no proof. We're obsessed with the numbers such as our pace, our splits, our weekly mileage and even more obsessed with making sure everyone else sees them too." No more awkward Facebook meetups, no more scattered fitness apps. We don't just run for our cardiovascular health anymore; we run for the kudos, the segments, and the community.
 
-- Receives incoming Linq chat messages through a Flask webhook.
-- Checks whether the message asks about a run.
-- Calls the Strava API for your latest activity.
-- Uses an optional AI agent to turn the Strava stats into a conversational reply.
-- Sends the reply back through the Linq API.
+
+<table>
+  <tr>
+    <td><img src="media\image.png" alt="Funny Strava activity 1" width="300"/></td>
+    <td>
+      <img src="media\image-1.png" alt="Funny Strava activity 2" width="300"/>
+      <br/>
+      <em>Examples of funny activities from Strava</em>
+    </td>
+  </tr>
+</table>
+
+<figure align="center">
+  <img src="media\image-2.png" alt="Sydney Marathon 2025" width="400"/>
+  <figcaption><em>Sydney Marathon 2025</em></figcaption>
+</figure>
+
+# Ride or Stride 
+I built a product called **Ride or Stride** — an AI running buddy and motivation peer that brings your Strava stats straight to iMessage. Instead of opening the app, you can text to retrieve your running stats recorded in Strava and even draft quick posts to your account to rack up those kudos.
+
+Here's an example of what it can do:
+
+
+<table>
+  <tr>
+    <td><img src="media\phone UI 2.png" alt="Funny Strava activity 1" width="300"/></td>
+        <td><img src="media\phone UI 1.png" alt="Funny Strava activity 1" width="305"/></td>
+
+  </tr>
+</table>
+
+
+#### Use Cases
+- **"What were my last run stats?"** — Get a quick breakdown of your most recent activity: distance, pace, time, and elevation.
+- **"Who gave me kudos?"** — See who reacted to your latest effort without opening the app.
+- **"What clubs am I in?"** — Pull up your Strava clubs and recent club activity.
+- **"Give me details on my marathon."** — Get splits, heart rate zones, and race highlights for any activity.
+- **"Write a post for my morning run."** — Let Claude draft a shareable Strava caption based on your stats.
+- **"Motivate me for today's long run."** — Get a personalized pep talk before you head out.
+
+
+The goal is to make Strava feel more conversational and social. Instead of digging through the app, you can text things the above sayings to get info on demand!
+
+## How It Works
+
+Ride or Stride connects the Strava API to the Linq API, letting you text your Linq number and ask for run stats, kudos, clubs, race details, motivation, or a ready-to-share post caption.
+
+![alt text](media\image-3.png)
+
+### Flow 
+- You send a text to your Linq number from iMessage
+- The app receives your message through a Flask webhook
+- It calls the Strava API to grab your activity data
+- Claude AI reads your message and turns your stats into a conversational reply
+- It can also generate shareable captions for your Strava posts
+- If AI is unavailable, it falls back to a manual reply
+- Your reply gets sent back to you through the Linq API
+
+
+### API Docs
+- **Linq:** https://docs.linqapp.com/
+- **Strava:** https://developers.strava.com/docs/reference/ 
+- **Claude:** https://platform.claude.com/docs/en/home 
 
 ## Project Files
-
-- `app.py` - Flask webhook server for receiving Linq messages and sending replies.
-- `strava.py` - Gets your latest activity from the Strava API.
-- `agent.py` - Optional AI agent that writes a friendly Strava stats reply.
-- `send_message.py` - Simple test script for sending a Linq message.
-- `requirements.txt` - Python packages needed for the project.
-- `.env` - Local secret values like API keys and phone numbers. Do not commit this file.
-- `.env.example` - Template showing which environment variables are needed.
+``` text
+Ride-or-Stride/
+├── src/
+│   ├── __init__.py
+│   ├── app.py              # Flask webhook + Linq message replies
+│   ├── ai_agent.py         # Claude/Gemini AI response layer
+│   ├── strava_auth.py      # Strava token refresh + API access helpers
+│   └── strava_stats.py     # Strava stats, kudos, clubs, splits, captions
+├── tests/
+│   ├── __init__.py
+│   ├── list_claude_models.py
+│   ├── verify_linq_setup.py
+│   ├── verify_strava_setup.py
+│   ├── test_claude.py
+│   ├── test_gemini.py
+│   └── test_strava_use_cases.py
+├── media/
+│   └── IMG_6984.PNG        # Public/shareable image asset
+├── .env                    # Local secrets, not committed
+├── .env.example            # Template for required environment variables
+├── .gitignore
+├── README.md
+└── requirements.txt
+```
 
 ## Setup
 
@@ -37,28 +110,17 @@ Create a file named `.env` in the project folder:
 ```bash
 cp .env.example .env
 ```
+Fill in the required values in `.env`. Keep `.env` private because it contains secrets.
 
-Then fill in your real values:
+`LINQ_API_KEY` is the API token used to authenticate requests to the Linq API.
 
-```bash
-LINQ_API_KEY=your_linq_api_key_here
-LINQ_FROM_NUMBER=your_linq_phone_number_here
-LINQ_TEST_TO_NUMBER=your_personal_phone_number_here
-STRAVA_TOKEN=your_strava_access_token_here
-AI_PROVIDER=claude
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-ANTHROPIC_MODEL=claude-3-5-haiku-latest
-GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-2.5-flash
-```
+`LINQ_FROM_NUMBER` is your Linq phone number. This is the number the bot sends replies from, and it should be written in E.164 format, like `+12055550123`.
 
-Example phone number format:
+`LINQ_TEST_TO_NUMBER` is a personal test phone number used by `tests/verify_linq_setup.py` when you want to test sending a Linq message manually without waiting for a webhook.
 
-```bash
-LINQ_FROM_NUMBER=+12055550123
-```
+For Strava, the long-term setup is `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, and `STRAVA_REFRESH_TOKEN`. The app uses those to refresh `STRAVA_TOKEN` automatically because Strava access tokens expire.
 
-Keep `.env` private because it contains secrets.
+`DEFAULT_POST_IMAGE_URL` is optional. If Strava does not provide a photo for an activity, the bot can use this public HTTPS image URL when you ask it to set up a post. Linq direct URL attachments must be public HTTPS files.
 
 `AI_PROVIDER` can be `claude` or `gemini`. If the selected provider is missing a key or the AI request fails, the app still replies with a manual Strava summary.
 
@@ -67,31 +129,34 @@ Keep `.env` private because it contains secrets.
 The project keeps each responsibility in a separate file:
 
 ```text
-phone text -> Linq webhook -> app.py -> strava.py -> agent.py -> Linq reply
+phone text -> Linq webhook -> src/app.py -> src/strava_stats.py -> src/ai_agent.py -> Linq reply
 ```
 
-- `app.py` receives the Linq webhook and decides what to do with the message.
-- `strava.py` gets structured stats for your latest Strava run.
-- `agent.py` sends those stats and the user's message to Claude or Gemini, then returns a text-message-friendly response.
+- `src/app.py` receives the Linq webhook and decides what to do with the message.
+- `src/strava_auth.py` handles Strava token refresh and authenticated API requests.
+- `src/strava_stats.py` gets structured stats for your Strava activities.
+- `src/ai_agent.py` sends those stats and the user's message to Claude or Gemini, then returns a text-message-friendly response.
 
 For example, instead of only returning:
 
 ```text
-Last run: 5.20 km in 32.1 min
+Last run: 3.23 mi in 32.1 min
 ```
 
 the AI agent can reply with something more natural:
 
 ```text
-Nice run. You covered 5.2 km in 32.1 min, around 6.17 min/km. Looks like a steady aerobic effort.
+Nice run. You covered 3.2 mi in 32.1 min, around 9.94 min/mi. Looks like a steady aerobic effort.
 ```
+
+If the AI agent is not connected, the app falls back to manual Strava-based replies using the stats returned from `src/strava_stats.py`.
 
 ## Running the Webhook
 
 Start the Flask app:
 
 ```bash
-python app.py
+python src/app.py
 ```
 
 By default, the app runs locally at:
@@ -131,7 +196,7 @@ https://your-ngrok-url.ngrok-free.app/webhook
 To test sending a message through the Linq API:
 
 ```bash
-python send_message.py
+python tests/verify_linq_setup.py
 ```
 
 This uses:
@@ -147,21 +212,23 @@ from your `.env` file.
 To test whether your Strava token works:
 
 ```bash
-python strava.py
+python tests/verify_strava_setup.py
 ```
 
 If the token is valid, it should print your latest run stats.
+
+If `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, and `STRAVA_REFRESH_TOKEN` are set, this command refreshes the Strava access token automatically and writes the newest `STRAVA_TOKEN` and `STRAVA_REFRESH_TOKEN` back into `.env`.
 
 ## Testing The AI Agent Only
 
 The AI agent is used automatically when you text the Linq number and the selected provider key is set in `.env`.
 
-If the AI key is missing, `agent.py` falls back to the manual Strava summary so the project can still run without AI.
+If the AI key is missing, `src/ai_agent.py` falls back to the manual Strava summary so the project can still run without AI.
 
 To test Claude without sending a Linq text:
 
 ```bash
-python test_claude.py
+python tests/test_claude.py
 ```
 
 If Claude is connected, the terminal should show `AI AGENT: using Claude model ...` and `AI AGENT REPLY: ...`.
@@ -169,7 +236,7 @@ If Claude is connected, the terminal should show `AI AGENT: using Claude model .
 To test Gemini without sending a Linq text:
 
 ```bash
-python test_gemini.py
+python tests/test_gemini.py
 ```
 
 If Gemini is connected, the terminal should show `AI AGENT: using Gemini model ...` and `AI AGENT REPLY: ...`.
@@ -183,6 +250,17 @@ last run
 ```
 
 The app should reply with your latest Strava run distance and moving time.
+
+Other useful texts:
+
+```text
+set up a post for my last run
+last run stats
+last run kudos
+who gave me kudos?
+my clubs
+Nov 22 half marathon splits
+```
 
 ## Notes
 

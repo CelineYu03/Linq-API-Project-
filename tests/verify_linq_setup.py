@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# This file is a tiny manual smoke test for Linq sending.
+# It does not use Flask or Strava; it just verifies your Linq credentials.
 url = "https://api.linqapp.com/api/partner/v3/chats"
 
 linq_api_key = os.getenv("LINQ_API_KEY")

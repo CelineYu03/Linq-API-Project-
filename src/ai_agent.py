@@ -3,7 +3,7 @@ import os
 import requests
 from dotenv import load_dotenv
 
-from strava import (
+from strava_stats import (
     format_kudos_summary,
     format_location_summary,
     format_run_details,
@@ -12,11 +12,13 @@ from strava import (
 
 load_dotenv()
 
+# AI_PROVIDER lets you switch providers without changing app.py.
+# Supported values: "claude" and "gemini".
 AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini").lower()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-5-haiku-latest")
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-5-haiku-20241022")
 
 SYSTEM_PROMPT = """You are a concise Strava running assistant inside a Linq text message chat.
 You interpret the user's text, even if it has typos, slang, or rough grammar.
@@ -24,7 +26,8 @@ You answer using only the latest Strava run data provided.
 
 Rules:
 - Reply in one short text message, under 240 characters.
-- Use 1-3 emojis when they make the reply warmer, especially for motivation or if the user asks for emojis.
+- Use 2-5 emojis for motivation, celebration, sharing, posting, or hype.
+- Use at least one emoji in most replies unless the user asks for a plain answer.
 - For run stat questions, include distance, moving time, and average pace when available.
 - For kudos questions, answer the kudos count directly.
 - For location questions, say location is not available unless location data is provided.
@@ -37,6 +40,7 @@ Rules:
 
 
 def wants_motivation(text):
+    """Return True for motivation-like wording in manual fallback mode."""
     motivation_words = [
         "motivat",
         "quote",
@@ -54,18 +58,25 @@ def wants_motivation(text):
 
 
 def wants_emojis(text):
+    """Return True when the user asks for a more expressive reply."""
     return "emoji" in text or "emojis" in text or "fun" in text
 
 
 def format_motivation(run_stats, use_emojis=True):
+    """Build a motivational fallback reply from the latest run distance."""
     emojis = " 🏃‍♀️🔥" if use_emojis else ""
     return (
-        f"You already banked {run_stats['distance_km']:.2f} km on your last run. "
+        f"You already banked {run_stats['distance_mi']:.2f} mi on your last run. "
         f"Today, just win the first 10 minutes. Momentum can take it from there.{emojis}"
     )
 
 
 def manual_reply(user_text, run_stats):
+    """Build a deterministic reply when the selected AI provider is unavailable.
+
+    This keeps the product useful even when Claude/Gemini is out of quota,
+    missing an API key, or temporarily failing.
+    """
     normalized_text = user_text.lower()
 
     if wants_motivation(normalized_text) or wants_emojis(normalized_text):
@@ -85,7 +96,11 @@ def manual_reply(user_text, run_stats):
 
 
 def generate_strava_reply(user_text, run_stats):
-    """Create an AI-written Strava reply, falling back to manual logic."""
+    """Generate the final Strava reply with the configured AI provider.
+
+    The function chooses Claude or Gemini based on AI_PROVIDER. If the provider
+    is not configured or errors, it returns manual_reply().
+    """
     fallback_reply = manual_reply(user_text, run_stats)
 
     prompt = build_prompt(user_text, run_stats)
@@ -101,6 +116,7 @@ def generate_strava_reply(user_text, run_stats):
 
 
 def build_prompt(user_text, run_stats):
+    """Build the provider-agnostic prompt with trusted Strava fields."""
     return f"""{SYSTEM_PROMPT}
 
 User message:
@@ -108,9 +124,9 @@ User message:
 
 Latest Strava run:
 - Name: {run_stats.get("name")}
-- Distance: {run_stats.get("distance_km")} km
+- Distance: {run_stats.get("distance_mi")} mi
 - Moving time: {run_stats.get("moving_time_min")} min
-- Average pace: {run_stats.get("pace_min_per_km")} min/km
+- Average pace: {run_stats.get("pace_min_per_mi")} min/mi
 - Start date: {run_stats.get("start_date")}
 - Kudos: {run_stats.get("kudos_count")}
 - Photos: {run_stats.get("photo_count")}
@@ -122,11 +138,12 @@ Latest Strava run:
 - Location: {run_stats.get("location")}
 - Has GPS/location data: {run_stats.get("has_location")}
 
-If the user asks for motivation, hype, a quote, or emojis, prioritize encouragement over stats.
+If the user asks for motivation, hype, a quote, emojis, sharing, or posting, prioritize encouragement and celebration over stats.
 Write only the reply text. Make it complete and concise."""
 
 
 def generate_gemini_reply(prompt, fallback_reply):
+    """Call Gemini through Google's REST API and parse the text response."""
     if not GEMINI_API_KEY:
         print("AI AGENT: GEMINI_API_KEY is missing; using manual fallback")
         return fallback_reply
@@ -171,6 +188,7 @@ def generate_gemini_reply(prompt, fallback_reply):
 
 
 def generate_claude_reply(prompt, fallback_reply):
+    """Call Claude through Anthropic's Messages API and parse the text response."""
     if not ANTHROPIC_API_KEY:
         print("AI AGENT: ANTHROPIC_API_KEY is missing; using manual fallback")
         return fallback_reply

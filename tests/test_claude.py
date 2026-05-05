@@ -1,10 +1,17 @@
-from agent import generate_strava_reply
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+
+from ai_agent import generate_strava_reply
 
 sample_run = {
     "name": "Nike Run Club: A Cold Run",
     "distance_km": 4.16,
+    "distance_mi": 2.59,
     "moving_time_min": 34.0,
     "pace_min_per_km": 8.18,
+    "pace_min_per_mi": 13.13,
     "start_date": "2026-05-01T18:35:48Z",
     "kudos_count": 0,
     "comment_count": 0,
